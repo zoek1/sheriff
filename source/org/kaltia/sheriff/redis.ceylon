@@ -2,21 +2,6 @@ import ceylon.io { ... }
 import ceylon.io.charset { ascii }
 import ceylon.io.buffer { newByteBuffer }
 
-shared alias Server => String;
-shared alias Port => Integer;
-
-interface Status {
-	formal shared String event;
-	string => event;
-}
-
-class Ok(shared actual String event) satisfies Status {}
-class Fail(shared actual String event) satisfies Status {}
-
-
-class FailConnectServer(String? msg, Exception? cause) 
-		extends Exception(msg, cause){
-}
 
 class Redis(Server server = "127.0.0.1", Port port = 6379) {
 	value connector = newSocketConnector(SocketAddress(server, port));
@@ -71,8 +56,15 @@ class Redis(Server server = "127.0.0.1", Port port = 6379) {
 	}
 	
 	
-	shared String exec(String cmd){
-		value slen = send(cmd);
+	shared RTypes exec(variable String cmd, Key? k, [RTypes]? values ){
+		cmd = buildCommand(cmd, k, values);
+		send(cmd);
+		return parseResponse(recv());
+	}
+	
+	shared String execloop(String s) {
+		send(s);
+		if (s.lowercased == "quit") {return "";}
 		return recv();
 	}
 	

@@ -3,7 +3,7 @@ import org.kaltia.repl { Repl }
 shared void run() {
 	try {
     	value redis = Redis();
-    	value repl = Repl(redis.exec);
+    	value repl = Repl(redis.execloop);
     	repl.loop();
     	redis.close();
 	}catch (FailConnectServer e){

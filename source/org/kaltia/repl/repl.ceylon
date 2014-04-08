@@ -10,9 +10,14 @@ shared class Repl(shared String(String) eval=identity,
 	shared void loop(String end=""){
 		while(true) {
 			process.write("``prompt`` "); 
+			try {
 			value read = process.readLine();
-			if (read == end){return;}
-			print(eval(read));
+			value res = eval(read);
+			if (res == end){return;}
+			print(res);
+		} catch(e) {
+			break;
+		}
 		}
 	}
 }
