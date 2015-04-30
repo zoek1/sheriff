@@ -1,19 +1,43 @@
 import ceylon.io { ... }
 import ceylon.io.charset { ascii }
-import ceylon.io.buffer { newByteBuffer }
+import ceylon.io.buffer { newByteBuffer,
+	ByteBuffer }
+import ceylon.logging {
+	addLogWriter,
+	Priority,
+	info,
+	trace
+}
+import ceylon.language.meta.declaration {
+	Module,
+	Package
+}
 
 
-class Redis(Server server = "127.0.0.1", Port port = 6379) {
+class Redis(Server server = "127.0.0.1", Port port = 6379, Priority priority = info) {
+	
+	addLogWriter {
+		void log(Priority p, Module|Package c, String m, Exception? e) {
+			value print = p<=trace 
+			then process.writeLine 
+			else process.writeError;
+			print("[``system.milliseconds``] ``p.string`` ``m``\n");
+			if (exists e) {
+				printStackTrace(e, print);
+			}
+		}
+	};
+	
 	value connector = newSocketConnector(SocketAddress(server, port));
 	
 	variable Socket? redis = null;
 	
 	try {
-		print("Conexion a redis aceptada!");
 		redis = connector.connect();
-
+		log.info("The connection was stablished with the server!");
 	} catch (e){
-		throw FailConnectServer(e.message, e.cause);
+		log.error("The connection can't being stablished");
+		throw FailConnectServer(e.message, e);
 	}
 	
 	"""# Peticion al servidor
@@ -24,15 +48,24 @@ class Redis(Server server = "127.0.0.1", Port port = 6379) {
 	   """
 	throws (`class FailConnectServer`, "Se interrumpio la conexion con el servidor")
 	Integer send(String msg) {
+		log.info("send: sending data");
 		if (is Socket credis = redis){
 			try {
+				log.info("Verify connection with the server");
+				
 				value enc_msg = ascii.encode(msg + "\r\n"); 
 				Integer len = credis.write(enc_msg);
+				log.info("Sending encoded data (``ascii.encode(msg)``, ``len``)");
+				
 				return len;
 			} catch (e) {
-				throw FailConnectServer(e.message, e.cause);
-			}
+				log.error("The connection is broken");
+				throw FailConnectServer(e.message, e);
+			} 
 		}
+	
+		log.info("The conection doesn't exists");
+			
 	return 0;
 	}
 	
@@ -45,30 +78,49 @@ class Redis(Server server = "127.0.0.1", Port port = 6379) {
 	throws (`class FailConnectServer`, "Se interrumpio la conexion con el servidor")
 	String recv() {
 		value res = newByteBuffer(120);
+		value decoder = ascii.Decoder();
+		log.info("reciving data");
+		variable value len = 0;
 		if (is Socket credis = redis) {
 			try {
-				value len = credis.read(res);
+				
+				//credis.readFully(void (ByteBuffer buffer) {decoder.decode(buffer);});
+				len = credis.read(res);
+				res.flip();
+				log.info("reading data (``res.take(len)``), ``res.writable``");
 			} catch (e) {
-				throw FailConnectServer(e.message, e.cause);
+				log.error("Can't be get a response, 'cause the connection is broken");
+				throw FailConnectServer(e.message, e);
 			}
 		}
-		return buildString(res);
+		res.flip();
+		return ascii.decode(res);
+		
+		// return decoder.consume();
 	}
 	
 	
 	shared RTypes exec(variable String cmd, Key? k, [RTypes]? values ){
 		cmd = buildCommand(cmd, k, values);
+		log.info("Command generated ``cmd``");
+		
 		send(cmd);
 		return parseResponse(recv());
 	}
 	
 	shared String execloop(String s) {
+		log.info("loop: Sendig data ``s``");
 		send(s);
-		if (s.lowercased == "quit") {return "";}
+		if (s.lowercased == "quit") {
+			log.info("Exit");
+			return "";
+		}
+		log.info("loop: reciving data");
 		return recv();
 	}
 	
-	shared Anything() close => void() { 
+	shared Anything() close => void() {
+		log.info("close the connection"); 
 		if (is Socket credis = redis) {
 			credis.close();
 		}

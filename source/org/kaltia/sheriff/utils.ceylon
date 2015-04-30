@@ -1,17 +1,23 @@
 import ceylon.io.buffer { ByteBuffer }
 // import java.lang { JavaString = String }
 import ceylon.collection {  LinkedList, HashMap}
-
+import ceylon.logging { ... }
+import ceylon.io.charset {
+	ascii
+}
 """
    I promise clean the code, the comments temporally act as tips and tricks.
    """
 
+shared Logger log = logger(`module org.kaltia.sheriff`);
 
 //Character string = '+';
 //Character array = '*';
 //Character bulkstring = '$';
 //Character integer = ':';
 //Character fail = '-';
+
+
 
 HashMap<Character,Types>  idenTypes = HashMap<Character,Types> { 
 	'+' -> String,
@@ -26,9 +32,10 @@ HashMap<Character,Types>  idenTypes = HashMap<Character,Types> {
 by("Miguel Gordian")
 String buildString(ByteBuffer res){
 	variable String msg = "";
-	for(char in res.bytes()){
-		if (char == '\r' || char == 0 ){break;}
-		msg += char.character.string;  
+	for(char in res){
+		if (char == '\r' || char == '\n' || char == 0.byte ){return msg;}
+		msg += char.string;  
+		log.info("Charater ``char``");
 	} 
 	return msg;
 }
@@ -56,22 +63,6 @@ shared String[] consume(String s) {
 	value p = temp.split((Character p) =>  p == '\n');
 
 	if (p != []) {
-			// Curiosamente esto no devuelve todos los elementos solo los que se definieron cuando se creo
-//			if (exists String first = p.first){
-//			 LinkedList<String> n= LinkedList<String>({first});
-//		
-//			for (i in p) { 
-//				print("Valor en lista : ``i``");
-//				if  ( i != ""){
-//					print("Agregando : ``i``");
-//					n.add(i);
-//				}
-//			
-//			 n.remove(n.size -1);
-//
-//			return {*n};
-//		}
-// }
 			variable String[] rlis = [];
 		
 			for (i in p ){
@@ -79,15 +70,6 @@ shared String[] consume(String s) {
 				
 			}
 			return rlis.reversed;
-			
-			//variable String[] rlis = [*p];
-			
-			//if (rlis.size > 1){
-			//	rlis = rlis.trim { function trimming(String elem) => elem == ""; };
-			//}
-			//return rlis;
-		
-			
 	}
 	return [];
 }
@@ -95,11 +77,6 @@ shared String[] consume(String s) {
 "Identify data types"
 by("zoek")
 shared Types identifyType(String data){
-	//if (exists tmp = data[0], tmp == integer){
-	//	return Integer;
-	//} else if  (exists tmp = data[0], tmp == array) {
-	//	return Array<RTypes>;
-	//}
 	
 	if (exists tmp=data[0], exists t=idenTypes.get(tmp)) {
 		return t;
@@ -112,29 +89,24 @@ by("zoek")
 shared [Types,RTypes] buildToken(String s){
 	value type = identifyType(s);
 	if (type is Integer(Integer)) {
-		if (exists n=parseInteger(String(s.skipping(1)))) {
+		if (exists n=parseInteger(String(s.sublistFrom(1)))) {
 			return [type, n];
 		}
 	} if (type is Array<RTypes>({RTypes*})) {
-		if (exists n=parseInteger(String(s.skipping(1)))) {
+		if (exists n=parseInteger(String(s.sublistFrom(1)))) {
 			return [type, n];
 		}
 	}
 	
-	return [String, String(s.skipping(1))];
+	return [String, String(s.sublistFrom(1))];
 }
 
 shared [Types,String][] buildTokens(String s) {
 	variable [Types,String][] tokCommand  = [[Integer, "$564"]];
 	
-	//value cmd = buildData(":");
-	//if (is Integer(Integer) cmd ) {
-	//	value test = cmd(5);
-	//	print("Integer  ``test``");
-	//}
 	for (i in consume(s)){
 		value type = identifyType(i);
-		tokCommand = [[type, String(i.skipping(1))],*tokCommand];
+		tokCommand = [[type, String(i.sublistFrom(1))],*tokCommand];
 	} 
 	
 	return tokCommand;

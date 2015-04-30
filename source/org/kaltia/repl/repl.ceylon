@@ -12,9 +12,11 @@ shared class Repl(shared String(String) eval=identity,
 			process.write("``prompt`` "); 
 			try {
 			value read = process.readLine();
-			value res = eval(read);
-			if (res == end){return;}
-			print(res);
+			if (exists readed=read) {
+			  value res = eval(readed);
+			  if (res == end){return;}
+			  print(res);
+		    }
 		} catch(e) {
 			break;
 		}
