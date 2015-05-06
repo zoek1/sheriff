@@ -1,5 +1,8 @@
 import ceylon.test { ... }
 import org.kaltia.sheriff { ... }
+import ceylon.logging {
+	warn
+}
 
 
 class ConsumeTest() {
@@ -71,5 +74,14 @@ class BuildToken (){
 		value res = buildToken("*5");
 		assertTrue(res[0] is Array<RTypes>({RTypes*}));
 		assertEquals(res[1], 5);
+	}
+}
+
+
+class ServerCommands() {
+	value redis = Redis { server = "172.17.0.2"; priority=warn; };
+	
+	shared test void test_echo_command (){
+		assertEquals(redis.echo("sheriff"), "sheriff");
 	}
 }

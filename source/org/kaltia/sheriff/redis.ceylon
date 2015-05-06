@@ -5,8 +5,7 @@ import ceylon.io.buffer { newByteBuffer,
 import ceylon.logging {
 	addLogWriter,
 	Priority,
-	info,
-	trace
+	warn
 }
 import ceylon.language.meta.declaration {
 	Module,
@@ -14,14 +13,15 @@ import ceylon.language.meta.declaration {
 }
 
 
-class Redis(Server server = "127.0.0.1", Port port = 6379, Priority priority = info) {
+shared class Redis(Server server = "127.0.0.1", 
+		Port port = 6379, 
+		Priority priority = warn) satisfies Connection {
 	
 	addLogWriter {
 		void log(Priority p, Module|Package c, String m, Exception? e) {
-			value print = p<=trace 
+			value print = p<=priority
 			then process.writeLine 
 			else process.writeError;
-			print("[``system.milliseconds``] ``p.string`` ``m``\n");
 			if (exists e) {
 				printStackTrace(e, print);
 			}
@@ -100,7 +100,7 @@ class Redis(Server server = "127.0.0.1", Port port = 6379, Priority priority = i
 	}
 	
 	
-	shared RTypes exec(variable String cmd, Key? k, [RTypes]? values ){
+	shared actual RTypes exec(variable String cmd, Key? k, [RTypes]? values ){
 		cmd = buildCommand(cmd, k, values);
 		log.info("Command generated ``cmd``");
 		

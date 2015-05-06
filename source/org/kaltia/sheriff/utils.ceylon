@@ -34,14 +34,15 @@ String buildString(ByteBuffer res){
 	variable String msg = "";
 	for(char in res){
 		if (char == '\r' || char == '\n' || char == 0.byte ){return msg;}
-		msg += char.string;  
+		msg += char.string;	  
 		log.info("Charater ``char``");
 	} 
 	return msg;
 }
 
 "This function take 3 parameters according to command structure in redis-cli"
-String buildCommand(variable String cmd, Key? k, RTypes[]? values) { 		
+String buildCommand(variable String cmd, Key? k, RTypes[]? values) {
+	//TODO: validate the cmd	
 	if (is Key k ){
 		cmd = cmd + " " + k.string; 
 	} 
@@ -113,7 +114,10 @@ shared [Types,String][] buildTokens(String s) {
 }
 
 RTypes consumeData(String s) {
-	return s;
+	value metadata = {"size" -> s.size, "type"-> "value"};
+	return String(s.skipWhile((Character element) => element != '\n')
+		.filter((Character element) => element != '\n' && element != '\r'));
+			
 }
 
 RTypes consumeError(String s) {
