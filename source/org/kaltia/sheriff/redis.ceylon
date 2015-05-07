@@ -116,7 +116,9 @@ shared class Redis(Server server = "127.0.0.1",
 			return "";
 		}
 		log.info("loop: reciving data");
-		return recv();
+		value res = parseResponse(recv()).string;
+		if (!res.empty) { return res; }
+		return "OK";
 	}
 	
 	shared Anything() close => void() {
