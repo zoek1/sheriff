@@ -79,9 +79,19 @@ class BuildToken (){
 
 
 class ServerCommands() {
-	value redis = Redis { server = "172.17.0.2"; priority=warn; };
+	value redis = Redis { server = "127.0.0.1"; priority=warn; };
 	
 	shared test void test_echo_command (){
 		assertEquals(redis.echo("sheriff"), "sheriff");
+	}
+	
+	shared test void test_ping_fail_command () {
+		value redis = Redis { server = "127.0.0.1"; priority=warn; };
+		redis.close();
+		assertEquals(redis.ping(), null);
+	}
+	
+	shared test void test_ping_ok_command () {
+		assertEquals(redis.ping(), "PONG");
 	}
 }
